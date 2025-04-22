@@ -8,26 +8,26 @@ NONE="none"
 
 BOOM=-1
 
-ScreenFPS=30
-RowNumber=9
-ColNumber=9
-BOOMNumber=10
+ScreenFPS=30            #刷新率
+RowNumber=9             #一行有多少格子
+ColNumber=9     
+BOOMNumber=10           #雷的数目
 RectNumber=RowNumber*ColNumber      
-RectHeight=36
+RectHeight=36           #包括所有雷的最小面板应该多高
 RectWidth=36
-RectEdge=1
-assert RectHeight>2
+RectEdge=1              #雷的边缘美化
+assert RectHeight>2     #断言，断定这个成立，否则程序报错
 assert RectWidth>2
 assert RectHeight>2*RectEdge
 assert RectWidth>2*RectEdge
 assert RectNumber>BOOMNumber
 
-ButtonHeight=20
-EdgeHeight=EdgeWidth=6
-FuncHeight=48
+ButtonHeight=20         #预留按钮高度
+EdgeHeight=EdgeWidth=6  #面板间边界美化
+FuncHeight=48           #计时，剩余雷数，重来预留高度
 
-OthersHeight=ButtonHeight+EdgeHeight+FuncHeight+EdgeHeight
-ScreenHeight=OthersHeight+RectHeight*ColNumber+EdgeHeight
+OthersHeight=ButtonHeight+EdgeHeight+FuncHeight+EdgeHeight  #你也不想写一大串吧
+ScreenHeight=OthersHeight+RectHeight*ColNumber+EdgeHeight   #屏幕高度
 ScreenWidth=EdgeWidth+RectWidth*RowNumber+EdgeWidth
 
 WHITE=(255,255,255)
@@ -69,7 +69,7 @@ def main():
                     mouseRightClicked=True
                 mousex, mousey = event.pos
 
-            blockx,blocky= whatBlock(mousex,mousey)
+            blockx,blocky= whatBlock(mousex,mousey)         
             if (mouseLeftClicked or mouseRightClicked) and ClickBoard(mousex,mousey):
                 if mouseLeftClicked:
                     if FirstClick==False:
@@ -81,14 +81,14 @@ def main():
         pygame.display.update()
         FPSCLOCK.tick(ScreenFPS)
 
-def RevealALL(Blocks):
+def RevealALL(Blocks):              #揭开所有雷
     for Blockrow in Blocks:
         for anyBlock in Blockrow:
             anyBlock.ChangeVisit(True)
 
-def RandomBOOM(Blocks,blockx,blocky):
+def RandomBOOM(Blocks,blockx,blocky):   #随机赋值雷
     BOOMS=[]
-    for i in range(ColNumber*RowNumber-1):
+    for i in range(ColNumber*RowNumber-1):  #有一处一定不为雷
         if i<BOOMNumber:
             BOOMS.append(BOOM)
         else:
@@ -108,12 +108,11 @@ def RandomBOOM(Blocks,blockx,blocky):
     print(len(BOOMS))
     return Blocks
 
-            
-def BlockReveal(Blocks,blockx,blocky):
+def BlockReveal(Blocks,blockx,blocky):      #雷揭开
     Blocks[blocky][blockx].ChangeVisit(True)
     
-def whatBlock(mousex,mousey):   #不要随意等于，不然就把None检测考虑进去
-    if mousey<OthersHeight or mousey>OthersHeight+ColNumber*RectHeight:
+def whatBlock(mousex,mousey):   #将鼠标位置转为雷的位置
+    if mousey<OthersHeight or mousey>OthersHeight+ColNumber*RectHeight:  #不要随意等于，不然就把None检测考虑进去   
         return (None,None)
     elif mousex<EdgeWidth or mousex>EdgeWidth+RowNumber*RectWidth:
         return (None,None)
@@ -122,14 +121,14 @@ def whatBlock(mousex,mousey):   #不要随意等于，不然就把None检测考�
         blocky=(mousey-OthersHeight)//RectHeight
         return(blockx,blocky)
     
-def ClickBoard(mousex,mousey):
+def ClickBoard(mousex,mousey):      #检测是否点击扫雷面板
     Crect=pygame.Rect(EdgeWidth,OthersHeight,RowNumber*RectWidth ,ColNumber*RectHeight)
     if Crect.collidepoint(mousex,mousey):
         return True
     else:
         return False
     
-def InitBoard():
+def InitBoard():        #初始化数据
     Blocks=[]
     for i in range(ColNumber):
         BlocksRow=[]
@@ -140,7 +139,7 @@ def InitBoard():
         Blocks.append(BlocksRow)
     return Blocks
 
-def DrawScreen(Blocks):
+def DrawScreen(Blocks):     #UI
     DrawButtonLine()
     for Blockrow in Blocks:
         for anyBlock in Blockrow:
