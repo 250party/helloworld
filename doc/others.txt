@@ -1,0 +1,28 @@
+for drawing,you can see an easy version:
+
+ ————————
+|        |
+|        |
+ ————————
+|        |
+|        |
+ ————————
+
+They are:
+1.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectOtherEdge),(x+RectWidth-RectOtherEdge,y+RectOtherEdge),NumberThick)
+
+2.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectOtherEdge),(x+RectOtherEdge,y+RectHeightMiddle),NumberThick)
+
+3.pygame.draw.line(DISPLAYSURF,color,(x+RectWidth-RectOtherEdge,y+RectOtherEdge),(x+RectWidth-RectOtherEdge,y+RectHeightMiddle),NumberThick)
+
+4.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectHeightMiddle),(x+RectWidth-RectOtherEdge,y+RectHeightMiddle),NumberThick)
+
+5.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectHeightMiddle),(x+RectOtherEdge,y+RectHeight-RectOtherEdge),NumberThick)
+
+6.pygame.draw.line(DISPLAYSURF,color,(x+RectWidth-RectOtherEdge,y+RectHeightMiddle),(x+RectWidth-RectOtherEdge,y+RectHeight-RectOtherEdge),NumberThick)
+
+7.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectHeight-RectOtherEdge),(x+RectWidth-RectOtherEdge,y+RectHeight-RectOtherEdge),NumberThick)
+
+
+Middle | for whole
+    pygame.draw.line(DISPLAYSURF,ONECOLOR,(x+RectWidthMiddle,y+RectOtherEdge),(x+RectWidthMiddle,y+RectHeight-RectOtherEdge),NumberThick)
