@@ -1,28 +1,60 @@
-for drawing,you can see an easy version:
+#因为采用了字体变换废止
+class Line():   #用于格子内图案绘制
+    def Middle_UptoDown_Line(x,y,color):    #中竖线
+        pygame.draw.line(DISPLAYSURF,color,(x+RectWidthMiddle,y+RectOtherEdge),(x+RectWidthMiddle,y+RectHeight-RectOtherEdge),NumberThick)
+    def LefttoRight_Up_Line(x,y,color):     #上横线
+        pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectOtherEdge),(x+RectWidth-RectOtherEdge,y+RectOtherEdge),NumberThick)
+    def Left_UptoMiddle_Line(x,y,color):    #左上竖线
+        pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectOtherEdge),(x+RectOtherEdge,y+RectHeightMiddle),NumberThick)
+    def Right_UptoMiddle_Line(x,y,color):   #右上竖线
+        pygame.draw.line(DISPLAYSURF,color,(x+RectWidth-RectOtherEdge,y+RectOtherEdge),(x+RectWidth-RectOtherEdge,y+RectHeightMiddle),NumberThick)
+    def LefttoRight_Middle_Line(x,y,color): #中横线
+        pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectHeightMiddle),(x+RectWidth-RectOtherEdge,y+RectHeightMiddle),NumberThick)
+    def Left_MiddletoDown_Line(x,y,color):  #左下竖线
+        pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectHeightMiddle),(x+RectOtherEdge,y+RectHeight-RectOtherEdge),NumberThick)
+    def Right_MiddletoDown_Line(x,y,color): #右下竖线
+        pygame.draw.line(DISPLAYSURF,color,(x+RectWidth-RectOtherEdge,y+RectHeightMiddle),(x+RectWidth-RectOtherEdge,y+RectHeight-RectOtherEdge),NumberThick)
+    def LefttoRight_Down_Line(x,y,color):   #下横线
+        pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectHeight-RectOtherEdge),(x+RectWidth-RectOtherEdge,y+RectHeight-RectOtherEdge),NumberThick)
 
- ————————
-|        |
-|        |
- ————————
-|        |
-|        |
- ————————
-
-They are:
-1.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectOtherEdge),(x+RectWidth-RectOtherEdge,y+RectOtherEdge),NumberThick)
-
-2.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectOtherEdge),(x+RectOtherEdge,y+RectHeightMiddle),NumberThick)
-
-3.pygame.draw.line(DISPLAYSURF,color,(x+RectWidth-RectOtherEdge,y+RectOtherEdge),(x+RectWidth-RectOtherEdge,y+RectHeightMiddle),NumberThick)
-
-4.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectHeightMiddle),(x+RectWidth-RectOtherEdge,y+RectHeightMiddle),NumberThick)
-
-5.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectHeightMiddle),(x+RectOtherEdge,y+RectHeight-RectOtherEdge),NumberThick)
-
-6.pygame.draw.line(DISPLAYSURF,color,(x+RectWidth-RectOtherEdge,y+RectHeightMiddle),(x+RectWidth-RectOtherEdge,y+RectHeight-RectOtherEdge),NumberThick)
-
-7.pygame.draw.line(DISPLAYSURF,color,(x+RectOtherEdge,y+RectHeight-RectOtherEdge),(x+RectWidth-RectOtherEdge,y+RectHeight-RectOtherEdge),NumberThick)
-
-
-Middle | for whole
-    pygame.draw.line(DISPLAYSURF,ONECOLOR,(x+RectWidthMiddle,y+RectOtherEdge),(x+RectWidthMiddle,y+RectHeight-RectOtherEdge),NumberThick)
+elif self.GetContent()==2:  #_|_|_
+                Line.LefttoRight_Up_Line(self.Getx(),self.Gety(),TWOCOLOR)
+                Line.Right_UptoMiddle_Line(self.Getx(),self.Gety(),TWOCOLOR)
+                Line.LefttoRight_Middle_Line(self.Getx(),self.Gety(),TWOCOLOR)
+                Line.Left_MiddletoDown_Line(self.Getx(),self.Gety(),TWOCOLOR)
+                Line.LefttoRight_Down_Line(self.Getx(),self.Gety(),TWOCOLOR)
+            elif self.GetContent()==3:  #_|_|_
+                Line.LefttoRight_Up_Line(self.Getx(),self.Gety(),THREECOLOR)
+                Line.Right_UptoMiddle_Line(self.Getx(),self.Gety(),THREECOLOR)
+                Line.LefttoRight_Middle_Line(self.Getx(),self.Gety(),THREECOLOR)
+                Line.Right_MiddletoDown_Line(self.Getx(),self.Gety(),THREECOLOR)
+                Line.LefttoRight_Down_Line(self.Getx(),self.Gety(),THREECOLOR)
+            elif self.GetContent()==4:  #||_ 
+                Line.Left_UptoMiddle_Line(self.Getx(),self.Gety(),FOURCOLOR)
+                Line.Middle_UptoDown_Line(self.Getx(),self.Gety(),FOURCOLOR)
+                Line.LefttoRight_Middle_Line(self.Getx(),self.Gety(),FOURCOLOR)
+            elif self.GetContent()==5:  #_|_|_
+                Line.LefttoRight_Up_Line(self.Getx(),self.Gety(),FIVECOLOR)
+                Line.Left_UptoMiddle_Line(self.Getx(),self.Gety(),FIVECOLOR)
+                Line.LefttoRight_Middle_Line(self.Getx(),self.Gety(),FIVECOLOR)
+                Line.Right_MiddletoDown_Line(self.Getx(),self.Gety(),FIVECOLOR)
+                Line.LefttoRight_Down_Line(self.Getx(),self.Gety(),FIVECOLOR)
+            elif self.GetContent()==6:  #_|_||_
+                Line.LefttoRight_Up_Line(self.Getx(),self.Gety(),SIXCOLOR)
+                Line.Left_UptoMiddle_Line(self.Getx(),self.Gety(),SIXCOLOR)
+                Line.LefttoRight_Middle_Line(self.Getx(),self.Gety(),SIXCOLOR)
+                Line.Left_MiddletoDown_Line(self.Getx(),self.Gety(),SIXCOLOR)
+                Line.Right_MiddletoDown_Line(self.Getx(),self.Gety(),SIXCOLOR)
+                Line.LefttoRight_Down_Line(self.Getx(),self.Gety(),SIXCOLOR)
+            elif self.GetContent()==7: #_||
+                Line.LefttoRight_Up_Line(self.Getx(),self.Gety(),SEVENCOLOR)
+                Line.Right_UptoMiddle_Line(self.Getx(),self.Gety(),SEVENCOLOR)
+                Line.Right_MiddletoDown_Line(self.Getx(),self.Gety(),SEVENCOLOR)
+            elif self.GetContent()==8: #_||_||_
+                Line.LefttoRight_Up_Line(self.Getx(),self.Gety(),EIGHTCOLOR)
+                Line.Left_UptoMiddle_Line(self.Getx(),self.Gety(),EIGHTCOLOR)
+                Line.Right_UptoMiddle_Line(self.Getx(),self.Gety(),EIGHTCOLOR)
+                Line.LefttoRight_Middle_Line(self.Getx(),self.Gety(),EIGHTCOLOR)
+                Line.Left_MiddletoDown_Line(self.Getx(),self.Gety(),EIGHTCOLOR)
+                Line.Right_MiddletoDown_Line(self.Getx(),self.Gety(),EIGHTCOLOR)
+                Line.LefttoRight_Down_Line(self.Getx(),self.Gety(),EIGHTCOLOR)
