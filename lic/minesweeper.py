@@ -51,7 +51,7 @@ OthersHeight=ButtonHeight+EdgeHeight+FuncHeight+EdgeHeight  #你也不想写一�
 ScreenHeight=OthersHeight+RectHeight*ColNumber+EdgeHeight   #屏幕高度
 ScreenWidth=EdgeWidth+RectWidth*RowNumber+EdgeWidth
 
-TimePosx=ScreenWidth*2//3
+TimePosx=ScreenWidth*2//3           #时间放置，剩余雷放置
 BoomNumberPosy=TimePosy=ButtonHeight+FuncHeight//3
 
 BoomNumberHeight=TimeHeight=FuncHeight*2//3
@@ -79,7 +79,6 @@ SEVENCOLOR=(159,5,7)
 EIGHTCOLOR=(169,9,11)
 
 
-
 def main():
     global DISPLAYSURF,MY_FONT,FPSCLOCK
 
@@ -99,21 +98,19 @@ def main():
     startTimeFlag=False
     boomnumber_screen=boomnumber=BOOMNumber
 
-    delTime=0
+    pretime=0   #先前时间
+    delTime=0   #时间差
 
-    DISPLAYSURF.fill(WHITE)
     DrawScreen(Blocks)
     DrawTime(delTime)
     DrawBoomNumber(boomnumber_screen)
     pygame.display.update()
 
-    pretime=0
-
-    NeedChange=False
+    NeedChange=False        #需要更新屏幕吗
     while True:
-        DISPLAYSURF.fill(WHITE)
-
+        
         if NeedChange or pretime!=delTime:
+            DISPLAYSURF.fill(WHITE)
             DrawScreen(Blocks)
             DrawTime(delTime)
             DrawBoomNumber(boomnumber_screen)
@@ -148,7 +145,7 @@ def main():
 
                         startTimeFlag=True
 
-                    BlockReveal(Blocks,blocky,blockx)
+                    BlockReveal(Blocks,blocky,blockx)               #包含检查
                 elif mouseRightClicked:                             #右键
                     visit,sign=CheckBlockStatus(Blocks,blocky,blockx)
                     if visit==False:                                #空的标志->旗子->问号->空
@@ -167,7 +164,7 @@ def main():
 
         if FirstClick:
             if startTimeFlag:
-                startTime=time()
+                startTime=time()                                    #开始计时
                 startTimeFlag=False
             currentTime=time()
             delTime=currentTime-startTime
@@ -181,12 +178,6 @@ def main():
             boomnumber_screen=boomnumber
         #pygame.display.update()
         FPSCLOCK.tick(ScreenFPS)
-
-def BlockisZero(Blocks,blocky,blockx):
-    if Blocks[blocky][blockx].GetContent==0:
-        return True
-    else:
-        return False
 
 def ChangeBlockSign(Blocks,blocky,blockx,sign):         #更改为空，旗子，问号，三者之一
     Blocks[blocky][blockx].ChangeSign(sign)
@@ -271,12 +262,12 @@ def RandomBOOM(Blocks,blockx,blocky):   #随机赋值雷
     return Blocks
 
 def BlockReveal(Blocks,blocky,blockx):      #雷揭开
-    if blocky<0 or blocky>ColNumber-1 or blockx<0 or blockx>RowNumber-1:
+    if blocky<0 or blocky>ColNumber-1 or blockx<0 or blockx>RowNumber-1:    #递归越界中止
         return False
     visit,sign=CheckBlockStatus(Blocks,blocky,blockx)
-    if sign==NONE and visit==False:
+    if sign==NONE and visit==False:                                         #递归中止2
         Blocks[blocky][blockx].ChangeVisit(True)
-        if Blocks[blocky][blockx].GetContent()==0:
+        if Blocks[blocky][blockx].GetContent()==0:                          #深度优先遍历
             BlockReveal(Blocks,blocky-1,blockx-1)
             BlockReveal(Blocks,blocky-1,blockx)
             BlockReveal(Blocks,blocky-1,blockx+1)
