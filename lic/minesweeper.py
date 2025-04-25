@@ -10,7 +10,7 @@ NONE="none"
 BOOM=-1
 
 ScreenFPS=30            #刷新率
-RowNumber=9             #一列有多少格子
+RowNumber=9             #RowRectNumber 一行有几个格子
 ColNumber=9     
 assert RowNumber>1
 assert ColNumber>1
@@ -78,8 +78,10 @@ SIXCOLOR=(28,131,140)
 SEVENCOLOR=(159,5,7)
 EIGHTCOLOR=(169,9,11)
 
+
+
 def main():
-    global DISPLAYSURF
+    global DISPLAYSURF,MY_FONT,FPSCLOCK
 
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
@@ -87,19 +89,38 @@ def main():
     DISPLAYSURF.fill(WHITE)
     pygame.display.set_caption('minesweeper')
 
+    MY_FONT=pygame.font.SysFont("arial.ttf",1920)
+
     Blocks=InitBoard()
 
     mousex=0
     mousey=0
     FirstClick=False
-    startTime=0
     startTimeFlag=False
-    alreadytime=0
     boomnumber_screen=boomnumber=BOOMNumber
+
+    delTime=0
+
+    DISPLAYSURF.fill(WHITE)
+    DrawScreen(Blocks)
+    DrawTime(delTime)
+    DrawBoomNumber(boomnumber_screen)
+    pygame.display.update()
+
+    pretime=0
+
+    NeedChange=False
     while True:
         DISPLAYSURF.fill(WHITE)
-        DrawScreen(Blocks,alreadytime,boomnumber_screen)
 
+        if NeedChange or pretime!=delTime:
+            DrawScreen(Blocks)
+            DrawTime(delTime)
+            DrawBoomNumber(boomnumber_screen)
+            NeedChange=False
+            pygame.display.update()
+        
+        pretime=delTime
         mouseLeftClicked=False
         mouseRightClicked=False
 
@@ -123,12 +144,11 @@ def main():
                         FirstClick=True
                         Blocks=RandomBOOM(Blocks,blockx,blocky)     #随机雷
                         Blocks=CalNumber(Blocks)                    #计算数字
-                        RevealALL(Blocks)
-                        startTime=time()
+                        #RevealALL(Blocks)
+
                         startTimeFlag=True
-                    _,sign=CheckBlockStatus(Blocks,blocky,blockx)   #检查是否为旗子或问号，如果是，拒绝揭开格子
-                    if sign==NONE:
-                        BlockReveal(Blocks,blocky,blockx)
+
+                    BlockReveal(Blocks,blocky,blockx)
                 elif mouseRightClicked:                             #右键
                     visit,sign=CheckBlockStatus(Blocks,blocky,blockx)
                     if visit==False:                                #空的标志->旗子->问号->空
@@ -140,21 +160,33 @@ def main():
                         elif sign==MISTERY:
                             Blocks=ChangeBlockSign(Blocks,blocky,blockx,sign=NONE)
                             boomnumber+=1
-
+                NeedChange=True
             mouseLeftClicked=False                                  #还原状态，以免忘记而出错,这里不加会出现右键1次出现问号的错误，很奇怪
             mouseRightClicked=False                                 #相应问题，包括“摁得太快”“滑动多选”
                                                                     #可能是get了两个事件，还在for里，没有还原导致
-        if startTimeFlag:
-            nowTime=time()
-            alreadytime=int(nowTime-startTime)
-            if alreadytime>=999:
-                alreadytime=999
+
+        if FirstClick:
+            if startTimeFlag:
+                startTime=time()
+                startTimeFlag=False
+            currentTime=time()
+            delTime=currentTime-startTime
+            delTime=int(delTime)
+            if delTime>=999:
+                delTime=999
+
         if(boomnumber<0):
             boomnumber_screen=0
         else:
             boomnumber_screen=boomnumber
-        pygame.display.update()
+        #pygame.display.update()
         FPSCLOCK.tick(ScreenFPS)
+
+def BlockisZero(Blocks,blocky,blockx):
+    if Blocks[blocky][blockx].GetContent==0:
+        return True
+    else:
+        return False
 
 def ChangeBlockSign(Blocks,blocky,blockx,sign):         #更改为空，旗子，问号，三者之一
     Blocks[blocky][blockx].ChangeSign(sign)
@@ -239,7 +271,20 @@ def RandomBOOM(Blocks,blockx,blocky):   #随机赋值雷
     return Blocks
 
 def BlockReveal(Blocks,blocky,blockx):      #雷揭开
-    Blocks[blocky][blockx].ChangeVisit(True)
+    if blocky<0 or blocky>ColNumber-1 or blockx<0 or blockx>RowNumber-1:
+        return False
+    visit,sign=CheckBlockStatus(Blocks,blocky,blockx)
+    if sign==NONE and visit==False:
+        Blocks[blocky][blockx].ChangeVisit(True)
+        if Blocks[blocky][blockx].GetContent()==0:
+            BlockReveal(Blocks,blocky-1,blockx-1)
+            BlockReveal(Blocks,blocky-1,blockx)
+            BlockReveal(Blocks,blocky-1,blockx+1)
+            BlockReveal(Blocks,blocky,blockx-1)
+            BlockReveal(Blocks,blocky,blockx+1)
+            BlockReveal(Blocks,blocky+1,blockx-1)
+            BlockReveal(Blocks,blocky+1,blockx)
+            BlockReveal(Blocks,blocky+1,blockx+1)
     
 def whatBlock(mousex,mousey):   #将鼠标位置转为雷的位置
     if mousey<OthersHeight or mousey>OthersHeight+ColNumber*RectHeight:  #不要随意等于，不然就把None检测考虑进去   
@@ -269,18 +314,16 @@ def InitBoard():        #初始化数据
         Blocks.append(BlocksRow)
     return Blocks
 
-def DrawScreen(Blocks,Time,boomnumber):     #UI
-    DrawButtonLine()
-    for Blockrow in Blocks:
-        for anyBlock in Blockrow:
-            anyBlock.Draw()
-    Time=str(Time)
+def DrawTime(Time):
+    Time=str(Time)                          #画时间
     if len(Time)==1:
         Time="00"+Time
     elif len(Time)==2:
         Time="0"+Time
     DrawWord(Time,RED,TimePosx,TimePosy,TimeWidth,TimeHeight)
-    boomnumber=str(boomnumber)
+
+def DrawBoomNumber(boomnumber):
+    boomnumber=str(boomnumber)              #画雷的数量
     if len(boomnumber)==1:
         boomnumber="0"+boomnumber
     elif len(boomnumber)==2:
@@ -289,13 +332,20 @@ def DrawScreen(Blocks,Time,boomnumber):     #UI
         boomnumber="99"
     DrawWord(boomnumber,RED,BoomNumberPosx,BoomNumberPosy,BoomNumberWidth,BoomNumberHeight)
 
+def DrawScreen(Blocks):     #UI
+    global FPSCLOCK
+    DrawButtonLine()                        #画按钮横条
+    for Blockrow in Blocks:                 #画格子
+        for anyBlock in Blockrow:
+            anyBlock.Draw()
+
 def DrawButtonLine():
     pygame.draw.rect(DISPLAYSURF,LIGHTGREY,(0,0,ScreenWidth,ButtonHeight))
     #pygame.draw.line(DISPLAYSURF,BLACK,(0,OthersHeight-1),(ScreenWidth//2,OthersHeight),1) #位置测试
 
-def DrawWord(word,color,x,y,width,high,font=""):
-    my_font=pygame.font.SysFont(font,1920)
-    text=my_font.render(word,True,color)
+def DrawWord(word,color,x,y,width,high):
+    
+    text=MY_FONT.render(word,True,color)
     textPos=text.get_rect()
     text=pygame.transform.scale(text, (width,high))
     textPos.topleft=(x,y)
