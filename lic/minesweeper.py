@@ -117,14 +117,14 @@ def main():
     EndGameFlag=False       #结束游戏标志
     EndBlockx=-1
     EndBlocky=-1
-    RevealAllFlag=False
+    RevealAllFlag=False     #结束游戏是全部展示标志
     
     while True:
         if EndGameFlag and Debug==False:                       #游戏结束了
             if RevealAllFlag:
                 RevealALL(Blocks)
                 RevealAllFlag=False
-        if NeedChange or pretime!=delTime:
+        if NeedChange or pretime!=delTime:                     #仅在需要的时候刷新界面
             DISPLAYSURF.fill(WHITE)
             DrawScreen(Blocks,preblocky,preblockx)
             DrawTime(delTime)
@@ -152,14 +152,14 @@ def main():
 
         if EndGameFlag==False or Debug==True:              #游戏还没结束
             blockx,blocky= whatBlock(mousex,mousey)         #将鼠标位置转为雷的位置
-            if blockx!=None and blocky!=None:               #画边框的
+            if blockx!=None and blocky!=None:               #如果鼠标放在了格子上
                 visit,sign=CheckBlockStatus(Blocks,blocky,blockx)
-                if visit==False:
+                if visit==False:                            #画边框的，如果未曾访问过，就要追踪
                     if preblockx!=blockx or preblocky!=blocky:
                         NeedChange=True
                         preblockx=blockx
                         preblocky=blocky
-                elif visit==True:
+                elif visit==True:                           #如果访问过了，那就不画，同时还要看是否是从有到无的时刻，以便刷新屏幕
                     preblockx=-1
                     preblocky=-1
                     if previsit!=visit:
@@ -173,7 +173,7 @@ def main():
                             Blocks=CalNumber(Blocks)                    #计算数字
                             #RevealALL(Blocks)
 
-                            startTimeFlag=True
+                            startTimeFlag=True                          #开始计时
 
                         BlockReveal(Blocks,blocky,blockx)               #包含检查
                         if BlockisBOOM(Blocks,blocky,blockx):
@@ -184,7 +184,6 @@ def main():
                         mouseLeftClicked=False
 
                     elif mouseRightClicked:                             #右键
-                        
                         if visit==False:                                #空的标志->旗子->问号->空
                             if sign==NONE:
                                 Blocks=ChangeBlockSign(Blocks,blocky,blockx,sign=FLAG)
@@ -323,13 +322,6 @@ def whatBlock(mousex,mousey):   #将鼠标位置转为雷的位置
         blockx=(mousex-EdgeWidth)//RectWidth
         blocky=(mousey-OthersHeight)//RectHeight
         return(blockx,blocky)
-    
-def ClickBoard(mousex,mousey):      #检测是否点击扫雷面板
-    Crect=pygame.Rect(EdgeWidth,OthersHeight,RowNumber*RectWidth ,ColNumber*RectHeight)
-    if Crect.collidepoint(mousex,mousey):
-        return True
-    else:
-        return False
     
 def InitBoard():        #初始化数据
     Blocks=[]
