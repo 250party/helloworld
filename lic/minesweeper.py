@@ -65,10 +65,12 @@ assert BoomNumberWidth<ScreenWidth//2-BoomNumberPosx
 
 WHITE=(255,255,255)
 RED=(255,0,0)
+LIGHTRED=(255,153,153)
 DARKRED=(176,7,14)
 SILVERCOLOR=(192,192,192)
 LIGHTGREY=(224,224,224)
 BLACK=(0,0,0)
+LIGHTBLUE=(137,207,240)
 ONECOLOR=(65,79,188)
 TWOCOLOR=(33,98,1)
 THREECOLOR=(168,3,6)
@@ -78,9 +80,10 @@ SIXCOLOR=(28,131,140)
 SEVENCOLOR=(159,5,7)
 EIGHTCOLOR=(169,9,11)
 
+Debug=False
 
 def main():
-    global DISPLAYSURF,MY_FONT,FPSCLOCK
+    global DISPLAYSURF,MY_FONT,FPSCLOCK,EndBlockx,EndBlocky
 
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
@@ -101,22 +104,35 @@ def main():
     pretime=0   #先前时间
     delTime=0   #时间差
 
-    DrawScreen(Blocks)
+    preblockx=blockx=-1
+    preblocky=blocky=-1
+
+    DrawScreen(Blocks,blocky,blockx)
     DrawTime(delTime)
     DrawBoomNumber(boomnumber_screen)
     pygame.display.update()
 
     NeedChange=False        #需要更新屏幕吗
+    previsit=False
+    EndGameFlag=False       #结束游戏标志
+    EndBlockx=-1
+    EndBlocky=-1
+    RevealAllFlag=False
+    
     while True:
-        
+        if EndGameFlag and Debug==False:                       #游戏结束了
+            if RevealAllFlag:
+                RevealALL(Blocks)
+                RevealAllFlag=False
         if NeedChange or pretime!=delTime:
             DISPLAYSURF.fill(WHITE)
-            DrawScreen(Blocks)
+            DrawScreen(Blocks,preblocky,preblockx)
             DrawTime(delTime)
             DrawBoomNumber(boomnumber_screen)
             NeedChange=False
-            pygame.display.update()
-        
+            pygame.display.update()         #刷新界面
+        else:
+            pass
         pretime=delTime
         mouseLeftClicked=False
         mouseRightClicked=False
@@ -133,49 +149,70 @@ def main():
                 elif event.button==3:
                     mouseRightClicked=True
                 mousex, mousey = event.pos
- 
+
+        if EndGameFlag==False or Debug==True:              #游戏还没结束
             blockx,blocky= whatBlock(mousex,mousey)         #将鼠标位置转为雷的位置
-            if (mouseLeftClicked or mouseRightClicked) and ClickBoard(mousex,mousey):   #如果点击了任一格子
-                if mouseLeftClicked:                                #左键
-                    if FirstClick==False:                           #检查是否为第一次点击，只有在第一次点击后，面板上才真正有雷
-                        FirstClick=True
-                        Blocks=RandomBOOM(Blocks,blockx,blocky)     #随机雷
-                        Blocks=CalNumber(Blocks)                    #计算数字
-                        #RevealALL(Blocks)
+            if blockx!=None and blocky!=None:               #画边框的
+                visit,sign=CheckBlockStatus(Blocks,blocky,blockx)
+                if visit==False:
+                    if preblockx!=blockx or preblocky!=blocky:
+                        NeedChange=True
+                        preblockx=blockx
+                        preblocky=blocky
+                elif visit==True:
+                    preblockx=-1
+                    preblocky=-1
+                    if previsit!=visit:
+                        NeedChange=True
+                        previsit=visit
+                if (mouseLeftClicked or mouseRightClicked):   #如果点击了任一格子
+                    if mouseLeftClicked:                                #左键
+                        if FirstClick==False:                           #检查是否为第一次点击，只有在第一次点击后，面板上才真正有雷
+                            FirstClick=True
+                            Blocks=RandomBOOM(Blocks,blockx,blocky)     #随机雷
+                            Blocks=CalNumber(Blocks)                    #计算数字
+                            #RevealALL(Blocks)
 
-                        startTimeFlag=True
+                            startTimeFlag=True
 
-                    BlockReveal(Blocks,blocky,blockx)               #包含检查
-                elif mouseRightClicked:                             #右键
-                    visit,sign=CheckBlockStatus(Blocks,blocky,blockx)
-                    if visit==False:                                #空的标志->旗子->问号->空
-                        if sign==NONE:
-                            Blocks=ChangeBlockSign(Blocks,blocky,blockx,sign=FLAG)
-                            boomnumber-=1
-                        elif sign==FLAG:
-                            Blocks=ChangeBlockSign(Blocks,blocky,blockx,sign=MISTERY)
-                        elif sign==MISTERY:
-                            Blocks=ChangeBlockSign(Blocks,blocky,blockx,sign=NONE)
-                            boomnumber+=1
-                NeedChange=True
-            mouseLeftClicked=False                                  #还原状态，以免忘记而出错,这里不加会出现右键1次出现问号的错误，很奇怪
-            mouseRightClicked=False                                 #相应问题，包括“摁得太快”“滑动多选”
-                                                                    #可能是get了两个事件，还在for里，没有还原导致
+                        BlockReveal(Blocks,blocky,blockx)               #包含检查
+                        if BlockisBOOM(Blocks,blocky,blockx):
+                            EndGameFlag=True
+                            RevealAllFlag=True
+                            EndBlockx=blockx*RectWidth+EdgeWidth
+                            EndBlocky=blocky*RectHeight+OthersHeight
+                        mouseLeftClicked=False
 
-        if FirstClick:
-            if startTimeFlag:
-                startTime=time()                                    #开始计时
-                startTimeFlag=False
-            currentTime=time()
-            delTime=currentTime-startTime
-            delTime=int(delTime)
-            if delTime>=999:
-                delTime=999
+                    elif mouseRightClicked:                             #右键
+                        
+                        if visit==False:                                #空的标志->旗子->问号->空
+                            if sign==NONE:
+                                Blocks=ChangeBlockSign(Blocks,blocky,blockx,sign=FLAG)
+                                boomnumber-=1
+                            elif sign==FLAG:
+                                Blocks=ChangeBlockSign(Blocks,blocky,blockx,sign=MISTERY)
+                            elif sign==MISTERY:
+                                Blocks=ChangeBlockSign(Blocks,blocky,blockx,sign=NONE)
+                                boomnumber+=1
+                        mouseRightClicked=False
+                    NeedChange=True
+            #mouseLeftClicked=False                                  #还原状态，以免忘记而出错,这里不加会出现右键1次出现问号的错误，很奇怪
+            #mouseRightClicked=False                                 #相应问题，包括“摁得太快”“滑动多选”,可能是get了两个事件，还在for里，没有还原导致。移出了for循环，但保留此处
+                                                                    
+            if FirstClick:
+                if startTimeFlag:
+                    startTime=time()                                    #开始计时
+                    startTimeFlag=False
+                currentTime=time()
+                delTime=currentTime-startTime
+                delTime=int(delTime)
+                if delTime>=999:
+                    delTime=999
+            if boomnumber<0:
+                boomnumber_screen=0
+            else:
+                boomnumber_screen=boomnumber
 
-        if(boomnumber<0):
-            boomnumber_screen=0
-        else:
-            boomnumber_screen=boomnumber
         #pygame.display.update()
         FPSCLOCK.tick(ScreenFPS)
 
@@ -278,9 +315,9 @@ def BlockReveal(Blocks,blocky,blockx):      #雷揭开
             BlockReveal(Blocks,blocky+1,blockx+1)
     
 def whatBlock(mousex,mousey):   #将鼠标位置转为雷的位置
-    if mousey<OthersHeight or mousey>OthersHeight+ColNumber*RectHeight:  #不要随意等于，不然就把None检测考虑进去   
+    if mousey<OthersHeight or mousey>=OthersHeight+ColNumber*RectHeight:  #不要随意等于，不然就把None检测考虑进去   
         return (None,None)
-    elif mousex<EdgeWidth or mousex>EdgeWidth+RowNumber*RectWidth:
+    elif mousex<EdgeWidth or mousex>=EdgeWidth+RowNumber*RectWidth:
         return (None,None)
     else:
         blockx=(mousex-EdgeWidth)//RectWidth
@@ -323,12 +360,17 @@ def DrawBoomNumber(boomnumber):
         boomnumber="99"
     DrawWord(boomnumber,RED,BoomNumberPosx,BoomNumberPosy,BoomNumberWidth,BoomNumberHeight)
 
-def DrawScreen(Blocks):     #UI
-    global FPSCLOCK
+def DrawScreen(Blocks,blocky,blockx):     #UI
     DrawButtonLine()                        #画按钮横条
+    i=0
     for Blockrow in Blocks:                 #画格子
+        j=0
         for anyBlock in Blockrow:
             anyBlock.Draw()
+            if blocky==i and blockx==j:
+                anyBlock.DrawLight(i,j)
+            j+=1
+        i+=1
 
 def DrawButtonLine():
     pygame.draw.rect(DISPLAYSURF,LIGHTGREY,(0,0,ScreenWidth,ButtonHeight))
@@ -377,8 +419,8 @@ class Rect():
 
         elif self.GetVisit()==True: #揭开了
             #如果是0123456789雷
-            if self.GetContent()==BOOM:
-                pygame.draw.rect(DISPLAYSURF,RED,(self.Getx()+RectEdge,self.Gety()+RectEdge,RectWidth-RectEdge*2,RectHeight-RectEdge*2),0)
+            if self.GetContent()==BOOM:             #淡红色，作为没揭开的点
+                pygame.draw.rect(DISPLAYSURF,LIGHTRED,(self.Getx()+RectEdge,self.Gety()+RectEdge,RectWidth-RectEdge*2,RectHeight-RectEdge*2),0)
             elif self.GetContent()==0:
                 pass
             elif self.GetContent()==1:
@@ -397,6 +439,18 @@ class Rect():
                 DrawWord('7',SEVENCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
             elif self.GetContent()==8: #_||_||_
                 DrawWord('8',EIGHTCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+
+            if self.Getx()==EndBlockx and self.Gety()==EndBlocky:     #预留作为结束点，红色醒目
+                pygame.draw.rect(DISPLAYSURF,RED,(self.Getx()+RectEdge,self.Gety()+RectEdge,RectWidth-RectEdge*2,RectHeight-RectEdge*2),0)
+            if self.GetSign()==FLAG:                    #在最后全部揭开时作为错误的插旗使用
+                pygame.draw.polygon(DISPLAYSURF,DARKRED,((self.Getx()+RectWidthMiddle,self.Gety()+RectNumbery),(self.Getx()+RectWidthMiddle//3,self.Gety()+(RectHeightMiddle+RectNumbery)//2),(self.Getx()+RectWidthMiddle,self.Gety()+RectHeightMiddle)))
+                pygame.draw.line(DISPLAYSURF,SILVERCOLOR,(self.Getx()+RectWidthMiddle,self.Gety()+RectNumbery),(self.Getx()+RectWidthMiddle,self.Gety()+RectHeight-RectNumbery),3)
+            elif self.GetSign()==MISTERY:               #是问号
+                DrawWord('?',BLACK,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+    def DrawLight(self,by,bx):
+        pygame.draw.rect(DISPLAYSURF,LIGHTBLUE,(bx*RectWidth+EdgeWidth,by*RectHeight+OthersHeight,RectWidth,RectHeight),RectEdge+1)
+
+            
 
 if __name__=="__main__":
     main()
