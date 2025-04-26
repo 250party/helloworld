@@ -2,18 +2,23 @@ import pygame,sys
 from pygame.locals import *
 import random
 from time import *
-
+from math import pi as PI
+from record import SaveRecord
 FLAG="flag"
 MISTERY="mistery"
 NONE="none"
+
+SMILE="smile"
+SAD="sad"
+NORMAL="normal"
 
 BOOM=-1
 
 ScreenFPS=30            #刷新率
 RowNumber=9             #RowRectNumber 一行有几个格子
 ColNumber=9     
-assert RowNumber>1
-assert ColNumber>1
+assert RowNumber>4
+assert ColNumber>4
 
 BOOMNumber=10           #雷的数目
 RectNumber=RowNumber*ColNumber    
@@ -51,6 +56,10 @@ OthersHeight=ButtonHeight+EdgeHeight+FuncHeight+EdgeHeight  #你也不想写一�
 ScreenHeight=OthersHeight+RectHeight*ColNumber+EdgeHeight   #屏幕高度
 ScreenWidth=EdgeWidth+RectWidth*RowNumber+EdgeWidth
 
+SmileHeight=SmileWidth=FuncHeight*2//3
+SmilePosx=ScreenWidth//2-SmileWidth//2
+SmilePosy=ButtonHeight+FuncHeight//3
+
 TimePosx=ScreenWidth*2//3           #时间放置，剩余雷放置
 BoomNumberPosy=TimePosy=ButtonHeight+FuncHeight//3
 
@@ -71,6 +80,7 @@ SILVERCOLOR=(192,192,192)
 LIGHTGREY=(224,224,224)
 BLACK=(0,0,0)
 LIGHTBLUE=(137,207,240)
+YELLOW=(255,255,0)
 ONECOLOR=(65,79,188)
 TWOCOLOR=(33,98,1)
 THREECOLOR=(168,3,6)
@@ -99,17 +109,21 @@ def main():
     mousey=0
     FirstClick=False
     startTimeFlag=False
-    boomnumber_screen=boomnumber=BOOMNumber
+    boomnumber_screen=boomnumber=BOOMNumber #显示的雷的数量
 
     pretime=0   #先前时间
     delTime=0   #时间差
+    recordTime=999
 
     preblockx=blockx=-1
     preblocky=blocky=-1
 
+    smile_status=NORMAL
+
     DrawScreen(Blocks,blocky,blockx)
     DrawTime(delTime)
     DrawBoomNumber(boomnumber_screen)
+    DrawSmile(smile_status)
     pygame.display.update()
 
     NeedChange=False        #需要更新屏幕吗
@@ -118,8 +132,50 @@ def main():
     EndBlockx=-1
     EndBlocky=-1
     RevealAllFlag=False     #结束游戏是全部展示标志
+    remainnumber=RectNumber-BOOMNumber    #剩余数量
+    WinFlag=False           #保存记录用
+    mouseLeftClicked=False
+    mouseRightClicked=False
     
     while True:
+        if WinFlag:
+            SaveRecord(RowNumber,ColNumber,BOOMNumber,recordTime)
+            WinFlag=False
+        if mouseLeftClicked and ClickedisRestart(mousex,mousey)==True:  #重来，main照抄
+            Blocks=InitBoard()
+
+            mousex=0
+            mousey=0
+            FirstClick=False
+            startTimeFlag=False
+            boomnumber_screen=boomnumber=BOOMNumber #显示的雷的数量
+
+            pretime=0   #先前时间
+            delTime=0   #时间差
+
+            preblockx=blockx=-1
+            preblocky=blocky=-1
+
+            smile_status=NORMAL
+
+            DISPLAYSURF.fill(WHITE)
+            DrawScreen(Blocks,blocky,blockx)
+            DrawTime(delTime)
+            DrawBoomNumber(boomnumber_screen)
+            DrawSmile(smile_status)
+            pygame.display.update()
+
+            NeedChange=False        #需要更新屏幕吗
+            previsit=False
+            EndGameFlag=False       #结束游戏标志
+            EndBlockx=-1
+            EndBlocky=-1
+            RevealAllFlag=False     #结束游戏是全部展示标志
+            remainnumber=RectNumber-BOOMNumber    #剩余数量
+            WinFlag=False
+            mouseLeftClicked=False
+            mouseRightClicked=False
+
         if EndGameFlag and Debug==False:                       #游戏结束了
             if RevealAllFlag:
                 RevealALL(Blocks)
@@ -129,6 +185,7 @@ def main():
             DrawScreen(Blocks,preblocky,preblockx)
             DrawTime(delTime)
             DrawBoomNumber(boomnumber_screen)
+            DrawSmile(smile_status)
             NeedChange=False
             pygame.display.update()         #刷新界面
         else:
@@ -137,13 +194,13 @@ def main():
         mouseLeftClicked=False
         mouseRightClicked=False
 
-        for event in pygame.event.get():
+        for event in pygame.event.get():    #操作检测
             if event.type==QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == MOUSEMOTION:
                 mousex, mousey = event.pos
-            elif event.type == MOUSEBUTTONUP:
+            elif event.type == MOUSEBUTTONDOWN:     #UP会有点不顺手
                 if event.button==1:
                     mouseLeftClicked=True
                 elif event.button==3:
@@ -175,10 +232,16 @@ def main():
 
                             startTimeFlag=True                          #开始计时
 
-                        BlockReveal(Blocks,blocky,blockx)               #包含检查
-                        if BlockisBOOM(Blocks,blocky,blockx):
+                        _,remainnumber=BlockReveal(Blocks,blocky,blockx,remainnumber)               #包含检查
+                        if remainnumber==0:                             #如果剩下的都是雷
+                            EndGameFlag=True
+                            WinFlag=True
+                            RevealAllFlag=True
+                            smile_status=SMILE
+                        if BlockisBOOM(Blocks,blocky,blockx):           #如果点到雷
                             EndGameFlag=True
                             RevealAllFlag=True
+                            smile_status=SAD
                             EndBlockx=blockx*RectWidth+EdgeWidth
                             EndBlocky=blocky*RectHeight+OthersHeight
                         mouseLeftClicked=False
@@ -197,13 +260,19 @@ def main():
                     NeedChange=True
             #mouseLeftClicked=False                                  #还原状态，以免忘记而出错,这里不加会出现右键1次出现问号的错误，很奇怪
             #mouseRightClicked=False                                 #相应问题，包括“摁得太快”“滑动多选”,可能是get了两个事件，还在for里，没有还原导致。移出了for循环，但保留此处
-                                                                    
+            else:
+                if preblockx!=-1 or preblocky!=-1:
+                    preblockx=-1
+                    preblocky=-1
+                    NeedChange=True
+
             if FirstClick:
                 if startTimeFlag:
                     startTime=time()                                    #开始计时
                     startTimeFlag=False
                 currentTime=time()
                 delTime=currentTime-startTime
+                recordTime=delTime
                 delTime=int(delTime)
                 if delTime>=999:
                     delTime=999
@@ -215,6 +284,13 @@ def main():
         #pygame.display.update()
         FPSCLOCK.tick(ScreenFPS)
 
+def ClickedisRestart(mousex,mousey):
+    Crect=pygame.Rect(SmilePosx,SmilePosy,SmileWidth,SmileHeight)
+    if Crect.collidepoint(mousex,mousey):
+        return True
+    else:
+        return False
+    
 def ChangeBlockSign(Blocks,blocky,blockx,sign):         #更改为空，旗子，问号，三者之一
     Blocks[blocky][blockx].ChangeSign(sign)
     return Blocks
@@ -297,21 +373,26 @@ def RandomBOOM(Blocks,blockx,blocky):   #随机赋值雷
         y+=1
     return Blocks
 
-def BlockReveal(Blocks,blocky,blockx):      #雷揭开
+def BlockReveal(Blocks,blocky,blockx,remainnumber):      #雷揭开
     if blocky<0 or blocky>ColNumber-1 or blockx<0 or blockx>RowNumber-1:    #递归越界中止
-        return False
+        return False,remainnumber
     visit,sign=CheckBlockStatus(Blocks,blocky,blockx)
     if sign==NONE and visit==False:                                         #递归中止2
         Blocks[blocky][blockx].ChangeVisit(True)
+        if BlockisBOOM(Blocks,blocky,blockx)==False:
+            remainnumber-=1
         if Blocks[blocky][blockx].GetContent()==0:                          #深度优先遍历
-            BlockReveal(Blocks,blocky-1,blockx-1)
-            BlockReveal(Blocks,blocky-1,blockx)
-            BlockReveal(Blocks,blocky-1,blockx+1)
-            BlockReveal(Blocks,blocky,blockx-1)
-            BlockReveal(Blocks,blocky,blockx+1)
-            BlockReveal(Blocks,blocky+1,blockx-1)
-            BlockReveal(Blocks,blocky+1,blockx)
-            BlockReveal(Blocks,blocky+1,blockx+1)
+            _,remainnumber=BlockReveal(Blocks,blocky-1,blockx-1,remainnumber)
+            _,remainnumber=BlockReveal(Blocks,blocky-1,blockx,remainnumber)
+            _,remainnumber=BlockReveal(Blocks,blocky-1,blockx+1,remainnumber)
+            _,remainnumber=BlockReveal(Blocks,blocky,blockx-1,remainnumber)
+            _,remainnumber=BlockReveal(Blocks,blocky,blockx+1,remainnumber)
+            _,remainnumber=BlockReveal(Blocks,blocky+1,blockx-1,remainnumber)
+            _,remainnumber=BlockReveal(Blocks,blocky+1,blockx,remainnumber)
+            _,remainnumber=BlockReveal(Blocks,blocky+1,blockx+1,remainnumber)
+        return True,remainnumber
+    return False,remainnumber
+    
     
 def whatBlock(mousex,mousey):   #将鼠标位置转为雷的位置
     if mousey<OthersHeight or mousey>=OthersHeight+ColNumber*RectHeight:  #不要随意等于，不然就把None检测考虑进去   
@@ -333,6 +414,18 @@ def InitBoard():        #初始化数据
             BlocksRow.append(anyBlock)
         Blocks.append(BlocksRow)
     return Blocks
+
+def DrawSmile(status):                      #绘制重来按钮
+    pygame.draw.rect(DISPLAYSURF,BLACK,(SmilePosx,SmilePosy,SmileWidth,SmileHeight),1)
+    pygame.draw.ellipse(DISPLAYSURF,YELLOW,(SmilePosx+1,SmilePosy+1,SmileWidth-2,SmileHeight-2),0)
+    pygame.draw.circle(DISPLAYSURF,BLACK,(SmilePosx+SmileWidth//4,SmilePosy+SmileHeight//3),SmileWidth//12,0)
+    pygame.draw.circle(DISPLAYSURF,BLACK,(SmilePosx+SmileWidth*3//4,SmilePosy+SmileHeight//3),SmileWidth//12,0)
+    if status==NORMAL:
+        pygame.draw.line(DISPLAYSURF,BLACK,(SmilePosx+SmileWidth//4,SmilePosy+SmileHeight*2//3),(SmilePosx+SmileWidth*3//4,SmilePosy+SmileHeight*2//3),1)
+    elif status==SAD:
+        pygame.draw.arc(DISPLAYSURF,BLACK,(SmilePosx+1+SmileWidth//4,SmilePosy+SmileHeight*2//3,(SmileWidth)//2,(SmileHeight)//3),0,PI,1)
+    elif status==SMILE:
+        pygame.draw.arc(DISPLAYSURF,BLACK,(SmilePosx+1+SmileWidth//4,SmilePosy+SmileHeight//2,(SmileWidth)//2,(SmileHeight)//3),PI,PI*2,1)
 
 def DrawTime(Time):
     Time=str(Time)                          #画时间
@@ -359,7 +452,7 @@ def DrawScreen(Blocks,blocky,blockx):     #UI
         j=0
         for anyBlock in Blockrow:
             anyBlock.Draw()
-            if blocky==i and blockx==j:
+            if blocky==i and blockx==j:     #在鼠标悬停处绘制边框
                 anyBlock.DrawLight(i,j)
             j+=1
         i+=1
