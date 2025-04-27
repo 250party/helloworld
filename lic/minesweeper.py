@@ -69,7 +69,8 @@ assert BoomNumberWidth<ScreenWidth//2-BoomNumberPosx
 SettingButtonPosx=2     #按钮               
 SettingButtonPosy=1
 SettingButtonHeight=ButtonHeight-2
-SettingButtonWidth=40
+OneLetterWidth=7
+SettingButtonWidth=OneLetterWidth*7
 Settingposx=EdgeWidth   #界面
 Settingposy=ButtonHeight+EdgeHeight
 SettingHeight=ScreenHeight-ButtonHeight-2*EdgeHeight
@@ -149,9 +150,13 @@ def main():
     RestartFlag=False               #是否重来
 
     while True:
-        if WinFlag:         #如果胜利，保存记录
-            SaveRecord(RowNumber,ColNumber,BOOMNumber,recordTime)
-            WinFlag=False
+        if EndGameFlag:                       #游戏结束了
+            if RevealAllFlag:
+                RevealALL(Blocks)
+                RevealAllFlag=False
+            if WinFlag:         #如果胜利，保存记录
+                SaveRecord(RowNumber,ColNumber,BOOMNumber,recordTime)
+                WinFlag=False
         while SettingFlag==True or (mouseLeftClicked and ClickedisSetting(mousex,mousey)):  #设置界面
             mouseLeftClicked=False
             for event in pygame.event.get():    #操作检测
@@ -208,7 +213,7 @@ def main():
                     break
             FPSCLOCK.tick(ScreenFPS)
         
-        if mouseLeftClicked and SettingFlag==False and (RestartFlag==True or ClickedisRestart(mousex,mousey)==True):  #重来，main照抄
+        if SettingFlag==False and mouseLeftClicked  and (RestartFlag==True or ClickedisRestart(mousex,mousey)==True):  #重来，main照抄
             Blocks=InitBoard()
 
             mousex=0
@@ -246,10 +251,6 @@ def main():
             SettingScreenNeedChange=True
             RestartFlag=False
 
-        if EndGameFlag:                       #游戏结束了
-            if RevealAllFlag:
-                RevealALL(Blocks)
-                RevealAllFlag=False
         if NeedChange or pretime!=delTime:                     #仅在需要的时候刷新主界面
             DISPLAYSURF.fill(WHITE)
             DrawScreen(Blocks,preblocky,preblockx)
@@ -349,7 +350,7 @@ def main():
             else:
                 boomnumber_screen=boomnumber
 
-        #pygame.display.update()
+        #ygame.display.update()
         FPSCLOCK.tick(ScreenFPS)
 
 def ClickedisSetting(mousex,mousey):
@@ -467,8 +468,7 @@ def BlockReveal(Blocks,blocky,blockx,remainnumber):      #雷揭开
             _,remainnumber=BlockReveal(Blocks,blocky+1,blockx+1,remainnumber)
         return True,remainnumber
     return False,remainnumber
-    
-    
+
 def whatBlock(mousex,mousey):   #将鼠标位置转为雷的位置
     if mousey<OthersHeight or mousey>=OthersHeight+ColNumber*RectHeight:  #不要随意等于，不然就把None检测考虑进去   
         return (None,None)
@@ -539,7 +539,7 @@ def DrawButtonLine():
 
 def DrawWord(word,color,x,y,width,high,FONT):
     FONT=FONT
-    text=FONT.render(word,True,color)
+    text=FONT.render(word,False,color)
     textPos=text.get_rect()
     text=pygame.transform.scale(text, (width,high))
     textPos.topleft=(x,y)
@@ -614,21 +614,21 @@ class Rect():
 def DrawSettingScreen(record):
     pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx,Settingposy,SettingWidth,SettingHeight),SettingEdge)
     pygame.draw.rect(DISPLAYSURF,WHITE,(Settingposx+SettingEdge,Settingposy+SettingEdge,SettingWidth-SettingEdge*2,SettingHeight-SettingEdge*2),0)
-    DrawWord("Your Record:",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingEdge*2,SettingButtonWidth*2,SettingButtonHeight,SETTING_FONT)
-    DrawWord("1."+"beginner",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight+SettingEdge*2,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
-    DrawWord("  "+"time:"+str(record["timescore"][0]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*2+SettingEdge*2,SettingButtonWidth+len(str(record["timescore"][0]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT)        
-    DrawWord("2."+"mediate ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*3+SettingEdge*2,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
-    DrawWord("  "+"time:"+str(record["timescore"][1]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*4+SettingEdge*2,SettingButtonWidth+len(str(record["timescore"][1]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT) 
-    DrawWord("3."+"advanced",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*5+SettingEdge*2,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
-    DrawWord("  "+"time:"+str(record["timescore"][2]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*6+SettingEdge*2,SettingButtonWidth+len(str(record["timescore"][2]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT) 
+    DrawWord                                     ("Your Record:",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingEdge*2,OneLetterWidth*13,SettingButtonHeight,SETTING_FONT)
+    DrawWord                                    ("1."+"beginner",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight+SettingEdge*2,OneLetterWidth*11,SettingButtonHeight,SETTING_FONT)
+    DrawWord("  "+"time:"+str(record["timescore"][0]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*2+SettingEdge*2,OneLetterWidth*7+len(str(record["timescore"][0]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT)        
+    DrawWord                                    ("2."+"mediate ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*3+SettingEdge*2,OneLetterWidth*11,SettingButtonHeight,SETTING_FONT)
+    DrawWord("  "+"time:"+str(record["timescore"][1]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*4+SettingEdge*2,OneLetterWidth*7+len(str(record["timescore"][1]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT) 
+    DrawWord                                    ("3."+"advanced",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*5+SettingEdge*2,OneLetterWidth*11,SettingButtonHeight,SETTING_FONT)
+    DrawWord("  "+"time:"+str(record["timescore"][2]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*6+SettingEdge*2,OneLetterWidth*7+len(str(record["timescore"][2]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT) 
 
-    DrawWord("Choose Difficulty:",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*8+SettingEdge,SettingButtonWidth*3,SettingButtonHeight,SETTING_FONT)
-    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*9.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight),1)
-    DrawWord("Beginner ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*9.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
-    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*11+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight),1)
-    DrawWord("Mediate  ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*11+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
-    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*12.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight),1)
-    DrawWord("Advanced",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*12.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
+    DrawWord        ("Choose Difficulty:",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*8+SettingEdge,OneLetterWidth*18,SettingButtonHeight,SETTING_FONT)
+    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*9.5+SettingEdge,OneLetterWidth*11,SettingButtonHeight),1)
+    DrawWord        ("Beginner ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*9.5+SettingEdge,OneLetterWidth*10,SettingButtonHeight,SETTING_FONT)
+    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*11+SettingEdge,OneLetterWidth*11,SettingButtonHeight),1)
+    DrawWord        ("Mediate  ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*11+SettingEdge,OneLetterWidth*10,SettingButtonHeight,SETTING_FONT)
+    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*12.5+SettingEdge,OneLetterWidth*11,SettingButtonHeight),1)
+    DrawWord        ("Advanced",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*12.5+SettingEdge,OneLetterWidth*10,SettingButtonHeight,SETTING_FONT)
 
 def ClickedisBeginner(mousex,mousey):
     Crect=pygame.Rect(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*9.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight)
