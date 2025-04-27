@@ -22,10 +22,10 @@ assert RowNumber>4
 assert ColNumber>4
 assert ColNumber*RowNumber>BOOMNumber
 #对格子以及格子内容物的外观定义
-RectHeight=36           #格子高度
-RectWidth=36
-assert RectHeight>10     #断言，断定这个成立，否则程序报错
-assert RectWidth>10
+RectHeight=32           #格子高度
+RectWidth=32
+assert RectHeight>20     #断言，断定这个成立，否则程序报错
+assert RectWidth>20
 
 RectHeightMiddle=RectHeight//2
 RectWidthMiddle=RectWidth//2
