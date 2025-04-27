@@ -10,10 +10,12 @@ def SaveRecord(RowRectNumber,ColRectNumber,BoomNumber,deltime):
     else: 
         return 0
     data=LoadRecord()
+    #print(data)
     recording=data["timescore"]
     for anyRecord in recording:
         if anyRecord["难度"]==key:
-            if deltime<anyRecord["最好用时"]:
+            if deltime<float(anyRecord["最好用时"]):
+                deltime=format(deltime,'.4f')
                 anyRecord["最好用时"]=deltime
 
     with open("./minesweeperdata/time_record.json",'w',encoding='utf-8')as f:
@@ -23,26 +25,29 @@ def LoadRecord():
     try:
         with open('./minesweeperdata/time_record.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-    except FileNotFoundError:
-        with open('./minesweeperdata/time_record.json', 'w', encoding='utf-8') as f:
-            data1={
-                "难度":"初级",
-                "最好用时":999
-            }
-            data2={
-                "难度":"中级",
-                "最好用时":999
-            }
-            data3={
-                "难度":"高级",
-                "最好用时":999
-            }
-            data={
-                "timescore":[data1,data2,data3]
-                }
-            json.dump(data, f, indent=4)
+    except Exception:
+        data=InitRecord()
     return data
     
+def InitRecord():
+    with open('./minesweeperdata/time_record.json', 'w', encoding='utf-8') as f:
+        data1={
+            "难度":"初级",
+            "最好用时":999
+        }
+        data2={
+            "难度":"中级",
+            "最好用时":999
+        }
+        data3={
+            "难度":"高级",
+            "最好用时":999
+        }
+        data={
+            "timescore":[data1,data2,data3]
+            }
+        json.dump(data, f, indent=4)
+    return data
 def main():
     SaveRecord(9,9,10,100)
 if __name__=='__main__':

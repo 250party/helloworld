@@ -3,7 +3,7 @@ from pygame.locals import *
 import random
 from time import *
 from math import pi as PI
-from record import SaveRecord
+from record import SaveRecord,LoadRecord
 FLAG="flag"
 MISTERY="mistery"
 NONE="none"
@@ -17,13 +17,11 @@ BOOM=-1
 ScreenFPS=30            #刷新率
 RowNumber=9             #RowRectNumber 一行有几个格子
 ColNumber=9     
+BOOMNumber=10           #雷的数目 
 assert RowNumber>4
 assert ColNumber>4
-
-BOOMNumber=10           #雷的数目
-RectNumber=RowNumber*ColNumber    
-assert RectNumber>BOOMNumber
-
+assert ColNumber*RowNumber>BOOMNumber
+#对格子以及格子内容物的外观定义
 RectHeight=36           #格子高度
 RectWidth=36
 assert RectHeight>10     #断言，断定这个成立，否则程序报错
@@ -47,31 +45,37 @@ assert RectNumberHeight<RectHeight
 assert RectNumberWidth<RectWidth
 assert RectShadowEdge<RectHeight
 assert RectShadowEdge<RectWidth
-
+#界面设计
 ButtonHeight=20         #预留按钮高度
 EdgeHeight=EdgeWidth=6  #面板间边界美化
-FuncHeight=48           #计时，剩余雷数，重来预留高度
-
-OthersHeight=ButtonHeight+EdgeHeight+FuncHeight+EdgeHeight  #你也不想写一大串吧
+FuncHeight=48           #计时，剩余雷数，重来方形区域高度
+OthersHeight=ButtonHeight+EdgeHeight+FuncHeight+EdgeHeight  #其他高度总和
 ScreenHeight=OthersHeight+RectHeight*ColNumber+EdgeHeight   #屏幕高度
 ScreenWidth=EdgeWidth+RectWidth*RowNumber+EdgeWidth
-
-SmileHeight=SmileWidth=FuncHeight*2//3
+#笑脸
+SmileHeight=SmileWidth=FuncHeight*2//3      
 SmilePosx=ScreenWidth//2-SmileWidth//2
 SmilePosy=ButtonHeight+FuncHeight//3
-
-TimePosx=ScreenWidth*2//3           #时间放置，剩余雷放置
+#时间，剩余雷
+TimePosx=ScreenWidth*2//3           
 BoomNumberPosy=TimePosy=ButtonHeight+FuncHeight//3
-
 BoomNumberHeight=TimeHeight=FuncHeight*2//3
 TimeWidth=FuncHeight
-
 BoomNumberPosx=ScreenWidth//4
 BoomNumberWidth=FuncHeight*2//3
-
 assert TimeWidth<ScreenWidth//3
 assert BoomNumberWidth<ScreenWidth//2-BoomNumberPosx
-
+#设置面板图形
+SettingButtonPosx=2     #按钮               
+SettingButtonPosy=1
+SettingButtonHeight=ButtonHeight-2
+SettingButtonWidth=40
+Settingposx=EdgeWidth   #界面
+Settingposy=ButtonHeight+EdgeHeight
+SettingHeight=ScreenHeight-ButtonHeight-2*EdgeHeight
+SettingWidth=ScreenWidth-2*EdgeWidth
+SettingEdge=1
+#颜色
 WHITE=(255,255,255)
 RED=(255,0,0)
 LIGHTRED=(255,153,153)
@@ -90,10 +94,12 @@ SIXCOLOR=(28,131,140)
 SEVENCOLOR=(159,5,7)
 EIGHTCOLOR=(169,9,11)
 
-Debug=False
-
 def main():
-    global DISPLAYSURF,MY_FONT,FPSCLOCK,EndBlockx,EndBlocky
+    global DISPLAYSURF,MY_FONT,SETTING_FONT,FPSCLOCK
+    global EndBlockx,EndBlocky                      #结束时最后一个选择
+    global RowNumber,ColNumber,BOOMNumber           #选择难度时更改这些值
+    global ScreenHeight,ScreenWidth
+    global SmilePosx,TimePosx,BoomNumberPosx,SettingWidth,SettingHeight
 
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
@@ -101,47 +107,108 @@ def main():
     DISPLAYSURF.fill(WHITE)
     pygame.display.set_caption('minesweeper')
 
-    MY_FONT=pygame.font.SysFont("arial.ttf",1920)
+    MY_FONT=pygame.font.SysFont("freesansbold",1920)    #字体设置
+    SETTING_FONT=pygame.font.SysFont("arial",1920)
 
-    Blocks=InitBoard()
+    Blocks=InitBoard()              #初始化空的内容
 
     mousex=0
     mousey=0
-    FirstClick=False
-    startTimeFlag=False
-    boomnumber_screen=boomnumber=BOOMNumber #显示的雷的数量
+    FirstClick=False                #第1次点击标志，用于给内容赋值：雷1234567890
+    startTimeFlag=False             #开始计时标志
+    boomnumber_screen=boomnumber=BOOMNumber #显示的雷的数量。1.2.显示的数量，若不一致，刷新屏幕；3.全局变量
 
     pretime=0   #先前时间
     delTime=0   #时间差
-    recordTime=999
+    recordTime=999      #初始化变量，意思是从开始到结束所用时间
 
-    preblockx=blockx=-1
+    preblockx=blockx=-1     #格子在数组的位置，pre意味着之前previous
     preblocky=blocky=-1
 
-    smile_status=NORMAL
+    smile_status=NORMAL     #板着脸
 
-    DrawScreen(Blocks,blocky,blockx)
-    DrawTime(delTime)
-    DrawBoomNumber(boomnumber_screen)
-    DrawSmile(smile_status)
-    pygame.display.update()
+    DrawScreen(Blocks,blocky,blockx)    #绘制Setting横条，各个格子
+    DrawTime(delTime)                   #绘制计时
+    DrawBoomNumber(boomnumber_screen)   #绘制剩余雷数字
+    DrawSmile(smile_status)             #绘制脸
+    pygame.display.update()  #更新画面
 
-    NeedChange=False        #需要更新屏幕吗
-    previsit=False
+    NeedChange=False        #主页面需要更新吗
+    previsit=False          #先前访问的是哪一个，用于悬停边框绘制
     EndGameFlag=False       #结束游戏标志
     EndBlockx=-1
     EndBlocky=-1
-    RevealAllFlag=False     #结束游戏是全部展示标志
-    remainnumber=RectNumber-BOOMNumber    #剩余数量
+    RevealAllFlag=False     #结束游戏时全部展示标志
+    remainnumber=ColNumber*RowNumber-BOOMNumber    #剩余数量，用于胜利
     WinFlag=False           #保存记录用
     mouseLeftClicked=False
     mouseRightClicked=False
     
+    SettingFlag=False       #开启设置功能的标志
+    SettingScreenNeedChange=True    #设置面板更新的标志
+    RestartFlag=False               #是否重来
+
     while True:
-        if WinFlag:
+        if WinFlag:         #如果胜利，保存记录
             SaveRecord(RowNumber,ColNumber,BOOMNumber,recordTime)
             WinFlag=False
-        if mouseLeftClicked and ClickedisRestart(mousex,mousey)==True:  #重来，main照抄
+        while SettingFlag==True or (mouseLeftClicked and ClickedisSetting(mousex,mousey)):  #设置界面
+            mouseLeftClicked=False
+            for event in pygame.event.get():    #操作检测
+                    if event.type==QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    elif event.type == MOUSEBUTTONDOWN:     
+                        if event.button==1:
+                            mouseLeftClicked=True
+                        mousex, mousey = event.pos
+            if mouseLeftClicked and ClickedisSetting(mousex,mousey):    #退出设置
+                SettingFlag=False
+                NeedChange=True
+                SettingScreenNeedChange=True
+                mouseLeftClicked=False
+                break
+            
+            SettingFlag=True        #持续while
+            if SettingScreenNeedChange:         #更新画面，包括难度选择和记录展示
+                TimeRecord=LoadRecord()
+                DrawSettingScreen(TimeRecord)
+                pygame.display.update()
+                SettingScreenNeedChange=False   #别总是刷新
+            
+            if mouseLeftClicked:                #难度选择
+                if ClickedisBeginner(mousex,mousey):
+                    RowNumber=9       
+                    ColNumber=9
+                    BOOMNumber=10
+                    RestartFlag=True
+                elif ClickedisMediate(mousex,mousey):
+                    RowNumber=16      
+                    ColNumber=16
+                    BOOMNumber=40
+                    RestartFlag=True
+                elif ClickedisAdvanced(mousex,mousey):
+                    RowNumber=30       
+                    ColNumber=16
+                    BOOMNumber=99
+                    RestartFlag=True
+                if RestartFlag==True:       #要变更画面的高度和宽度，下面的也得跟着改；而且直接进到下面if里
+                    ScreenHeight=OthersHeight+RectHeight*ColNumber+EdgeHeight   #屏幕高度
+                    ScreenWidth=EdgeWidth+RectWidth*RowNumber+EdgeWidth
+                    SmilePosx=ScreenWidth//2-SmileWidth//2
+                    TimePosx=ScreenWidth*2//3           
+                    BoomNumberPosx=ScreenWidth//4
+                    SettingWidth=ScreenWidth-2*EdgeWidth
+                    SettingHeight=ScreenHeight-ButtonHeight-2*EdgeHeight
+
+                    DISPLAYSURF = pygame.display.set_mode((ScreenWidth,ScreenHeight))   #重设分辨率
+                    SettingFlag=False
+                    SettingScreenNeedChange=True
+                    mouseLeftClicked=True
+                    break
+            FPSCLOCK.tick(ScreenFPS)
+        
+        if mouseLeftClicked and SettingFlag==False and (RestartFlag==True or ClickedisRestart(mousex,mousey)==True):  #重来，main照抄
             Blocks=InitBoard()
 
             mousex=0
@@ -171,16 +238,19 @@ def main():
             EndBlockx=-1
             EndBlocky=-1
             RevealAllFlag=False     #结束游戏是全部展示标志
-            remainnumber=RectNumber-BOOMNumber    #剩余数量
+            remainnumber=ColNumber*RowNumber-BOOMNumber    #剩余数量
             WinFlag=False
             mouseLeftClicked=False
             mouseRightClicked=False
+            SettingFlag=False
+            SettingScreenNeedChange=True
+            RestartFlag=False
 
-        if EndGameFlag and Debug==False:                       #游戏结束了
+        if EndGameFlag:                       #游戏结束了
             if RevealAllFlag:
                 RevealALL(Blocks)
                 RevealAllFlag=False
-        if NeedChange or pretime!=delTime:                     #仅在需要的时候刷新界面
+        if NeedChange or pretime!=delTime:                     #仅在需要的时候刷新主界面
             DISPLAYSURF.fill(WHITE)
             DrawScreen(Blocks,preblocky,preblockx)
             DrawTime(delTime)
@@ -207,7 +277,7 @@ def main():
                     mouseRightClicked=True
                 mousex, mousey = event.pos
 
-        if EndGameFlag==False or Debug==True:              #游戏还没结束
+        if EndGameFlag==False and SettingFlag==False:              #游戏还没结束
             blockx,blocky= whatBlock(mousex,mousey)         #将鼠标位置转为雷的位置
             if blockx!=None and blocky!=None:               #如果鼠标放在了格子上
                 visit,sign=CheckBlockStatus(Blocks,blocky,blockx)
@@ -228,11 +298,9 @@ def main():
                             FirstClick=True
                             Blocks=RandomBOOM(Blocks,blockx,blocky)     #随机雷
                             Blocks=CalNumber(Blocks)                    #计算数字
-                            #RevealALL(Blocks)
-
                             startTimeFlag=True                          #开始计时
 
-                        _,remainnumber=BlockReveal(Blocks,blocky,blockx,remainnumber)               #包含检查
+                        _,remainnumber=BlockReveal(Blocks,blocky,blockx,remainnumber)               #包含检查，连续揭开
                         if remainnumber==0:                             #如果剩下的都是雷
                             EndGameFlag=True
                             WinFlag=True
@@ -284,6 +352,13 @@ def main():
         #pygame.display.update()
         FPSCLOCK.tick(ScreenFPS)
 
+def ClickedisSetting(mousex,mousey):
+    Crect=pygame.Rect(SettingButtonPosx,SettingButtonPosy,SettingButtonWidth,SettingButtonHeight)
+    if Crect.collidepoint(mousex,mousey):
+        return True
+    else:
+        return False
+    
 def ClickedisRestart(mousex,mousey):
     Crect=pygame.Rect(SmilePosx,SmilePosy,SmileWidth,SmileHeight)
     if Crect.collidepoint(mousex,mousey):
@@ -433,7 +508,7 @@ def DrawTime(Time):
         Time="00"+Time
     elif len(Time)==2:
         Time="0"+Time
-    DrawWord(Time,RED,TimePosx,TimePosy,TimeWidth,TimeHeight)
+    DrawWord(Time,RED,TimePosx,TimePosy,TimeWidth,TimeHeight,MY_FONT)
 
 def DrawBoomNumber(boomnumber):
     boomnumber=str(boomnumber)              #画雷的数量
@@ -443,7 +518,7 @@ def DrawBoomNumber(boomnumber):
         pass
     else:
         boomnumber="99"
-    DrawWord(boomnumber,RED,BoomNumberPosx,BoomNumberPosy,BoomNumberWidth,BoomNumberHeight)
+    DrawWord(boomnumber,RED,BoomNumberPosx,BoomNumberPosy,BoomNumberWidth,BoomNumberHeight,MY_FONT)
 
 def DrawScreen(Blocks,blocky,blockx):     #UI
     DrawButtonLine()                        #画按钮横条
@@ -459,11 +534,12 @@ def DrawScreen(Blocks,blocky,blockx):     #UI
 
 def DrawButtonLine():
     pygame.draw.rect(DISPLAYSURF,LIGHTGREY,(0,0,ScreenWidth,ButtonHeight))
+    DrawWord("Setting",BLACK,SettingButtonPosx,SettingButtonPosy,SettingButtonWidth,SettingButtonHeight,SETTING_FONT)
     #pygame.draw.line(DISPLAYSURF,BLACK,(0,OthersHeight-1),(ScreenWidth//2,OthersHeight),1) #位置测试
 
-def DrawWord(word,color,x,y,width,high):
-    
-    text=MY_FONT.render(word,True,color)
+def DrawWord(word,color,x,y,width,high,FONT):
+    FONT=FONT
+    text=FONT.render(word,True,color)
     textPos=text.get_rect()
     text=pygame.transform.scale(text, (width,high))
     textPos.topleft=(x,y)
@@ -500,7 +576,7 @@ class Rect():
                 pygame.draw.polygon(DISPLAYSURF,DARKRED,((self.Getx()+RectWidthMiddle,self.Gety()+RectNumbery),(self.Getx()+RectWidthMiddle//3,self.Gety()+(RectHeightMiddle+RectNumbery)//2),(self.Getx()+RectWidthMiddle,self.Gety()+RectHeightMiddle)))
                 pygame.draw.line(DISPLAYSURF,SILVERCOLOR,(self.Getx()+RectWidthMiddle,self.Gety()+RectNumbery),(self.Getx()+RectWidthMiddle,self.Gety()+RectHeight-RectNumbery),3)
             elif self.GetSign()==MISTERY:   #是问号
-                DrawWord('?',BLACK,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('?',BLACK,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
 
         elif self.GetVisit()==True: #揭开了
             #如果是0123456789雷
@@ -509,21 +585,21 @@ class Rect():
             elif self.GetContent()==0:
                 pass
             elif self.GetContent()==1:
-                DrawWord('1',ONECOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('1',ONECOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
             elif self.GetContent()==2:  #_|_|_
-                DrawWord('2',TWOCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('2',TWOCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
             elif self.GetContent()==3:  #_|_|_
-                DrawWord('3',THREECOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('3',THREECOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
             elif self.GetContent()==4:  #||_ 
-                DrawWord('4',FOURCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('4',FOURCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
             elif self.GetContent()==5:  #_|_|_
-                DrawWord('5',FIVECOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('5',FIVECOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
             elif self.GetContent()==6:  #_|_||_
-                DrawWord('6',SIXCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('6',SIXCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
             elif self.GetContent()==7: #_||
-                DrawWord('7',SEVENCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('7',SEVENCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
             elif self.GetContent()==8: #_||_||_
-                DrawWord('8',EIGHTCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('8',EIGHTCOLOR,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
 
             if self.Getx()==EndBlockx and self.Gety()==EndBlocky:     #预留作为结束点，红色醒目
                 pygame.draw.rect(DISPLAYSURF,RED,(self.Getx()+RectEdge,self.Gety()+RectEdge,RectWidth-RectEdge*2,RectHeight-RectEdge*2),0)
@@ -531,11 +607,48 @@ class Rect():
                 pygame.draw.polygon(DISPLAYSURF,DARKRED,((self.Getx()+RectWidthMiddle,self.Gety()+RectNumbery),(self.Getx()+RectWidthMiddle//3,self.Gety()+(RectHeightMiddle+RectNumbery)//2),(self.Getx()+RectWidthMiddle,self.Gety()+RectHeightMiddle)))
                 pygame.draw.line(DISPLAYSURF,SILVERCOLOR,(self.Getx()+RectWidthMiddle,self.Gety()+RectNumbery),(self.Getx()+RectWidthMiddle,self.Gety()+RectHeight-RectNumbery),3)
             elif self.GetSign()==MISTERY:               #是问号
-                DrawWord('?',BLACK,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight)
+                DrawWord('?',BLACK,self.Getx()+RectNumberx,self.Gety()+RectNumbery,RectNumberWidth,RectNumberHeight,MY_FONT)
     def DrawLight(self,by,bx):
         pygame.draw.rect(DISPLAYSURF,LIGHTBLUE,(bx*RectWidth+EdgeWidth,by*RectHeight+OthersHeight,RectWidth,RectHeight),RectEdge+1)
 
-            
+def DrawSettingScreen(record):
+    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx,Settingposy,SettingWidth,SettingHeight),SettingEdge)
+    pygame.draw.rect(DISPLAYSURF,WHITE,(Settingposx+SettingEdge,Settingposy+SettingEdge,SettingWidth-SettingEdge*2,SettingHeight-SettingEdge*2),0)
+    DrawWord("Your Record:",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingEdge*2,SettingButtonWidth*2,SettingButtonHeight,SETTING_FONT)
+    DrawWord("1."+"beginner",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight+SettingEdge*2,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
+    DrawWord("  "+"time:"+str(record["timescore"][0]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*2+SettingEdge*2,SettingButtonWidth+len(str(record["timescore"][0]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT)        
+    DrawWord("2."+"mediate ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*3+SettingEdge*2,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
+    DrawWord("  "+"time:"+str(record["timescore"][1]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*4+SettingEdge*2,SettingButtonWidth+len(str(record["timescore"][1]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT) 
+    DrawWord("3."+"advanced",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*5+SettingEdge*2,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
+    DrawWord("  "+"time:"+str(record["timescore"][2]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*6+SettingEdge*2,SettingButtonWidth+len(str(record["timescore"][2]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT) 
 
+    DrawWord("Choose Difficulty:",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*8+SettingEdge,SettingButtonWidth*3,SettingButtonHeight,SETTING_FONT)
+    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*9.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight),1)
+    DrawWord("Beginner ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*9.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
+    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*11+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight),1)
+    DrawWord("Mediate  ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*11+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
+    pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*12.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight),1)
+    DrawWord("Advanced",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*12.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight,SETTING_FONT)
+
+def ClickedisBeginner(mousex,mousey):
+    Crect=pygame.Rect(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*9.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight)
+    if Crect.collidepoint(mousex,mousey):
+        return True
+    else:
+        return False
+    
+def ClickedisMediate(mousex,mousey):
+    Crect=pygame.Rect(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*11+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight)
+    if Crect.collidepoint(mousex,mousey):
+        return True
+    else:
+        return False
+    
+def ClickedisAdvanced(mousex,mousey):
+    Crect=pygame.Rect(Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*12.5+SettingEdge,SettingButtonWidth*1.8,SettingButtonHeight)
+    if Crect.collidepoint(mousex,mousey):
+        return True
+    else:
+        return False
 if __name__=="__main__":
     main()
