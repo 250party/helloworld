@@ -141,7 +141,8 @@ def main():
     EndBlocky=-1
     RevealAllFlag=False     #结束游戏时全部展示标志
     remainnumber=ColNumber*RowNumber-BOOMNumber    #剩余数量，用于胜利
-    WinFlag=False           #保存记录用
+    WinFlag=False           #胜利保存记录用
+    RecordFlag=False        #保存记录用
     mouseLeftClicked=False
     mouseRightClicked=False
     
@@ -151,11 +152,13 @@ def main():
 
     while True:
         if EndGameFlag:                       #游戏结束了
+            if RecordFlag==True:
+                SaveRecord(RowNumber,ColNumber,BOOMNumber,recordTime,Win=WinFlag)
+                RecordFlag=False
             if RevealAllFlag:
                 RevealALL(Blocks)
                 RevealAllFlag=False
             if WinFlag:         #如果胜利，保存记录
-                SaveRecord(RowNumber,ColNumber,BOOMNumber,recordTime)
                 WinFlag=False
         while SettingFlag==True or (mouseLeftClicked and ClickedisSetting(mousex,mousey)):  #设置界面
             mouseLeftClicked=False
@@ -245,6 +248,7 @@ def main():
             RevealAllFlag=False     #结束游戏是全部展示标志
             remainnumber=ColNumber*RowNumber-BOOMNumber    #剩余数量
             WinFlag=False
+            RecordFlag=False
             mouseLeftClicked=False
             mouseRightClicked=False
             SettingFlag=False
@@ -304,11 +308,13 @@ def main():
                         _,remainnumber=BlockReveal(Blocks,blocky,blockx,remainnumber)               #包含检查，连续揭开
                         if remainnumber==0:                             #如果剩下的都是雷
                             EndGameFlag=True
+                            RecordFlag=True
                             WinFlag=True
                             RevealAllFlag=True
                             smile_status=SMILE
                         if BlockisBOOM(Blocks,blocky,blockx):           #如果点到雷
                             EndGameFlag=True
+                            RecordFlag=True
                             RevealAllFlag=True
                             smile_status=SAD
                             EndBlockx=blockx*RectWidth+EdgeWidth
@@ -614,12 +620,12 @@ class Rect():
 def DrawSettingScreen(record):
     pygame.draw.rect(DISPLAYSURF,BLACK,(Settingposx,Settingposy,SettingWidth,SettingHeight),SettingEdge)
     pygame.draw.rect(DISPLAYSURF,WHITE,(Settingposx+SettingEdge,Settingposy+SettingEdge,SettingWidth-SettingEdge*2,SettingHeight-SettingEdge*2),0)
-    DrawWord                                     ("Your Record:",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingEdge*2,OneLetterWidth*13,SettingButtonHeight,SETTING_FONT)
-    DrawWord                                    ("1."+"beginner",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight+SettingEdge*2,OneLetterWidth*11,SettingButtonHeight,SETTING_FONT)
+    DrawWord("Your Record:",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingEdge*2,OneLetterWidth*13,SettingButtonHeight,SETTING_FONT)
+    DrawWord("1."+"beginner "+str(record["timescore"][0]["胜利局数"])+"/"+str(record["timescore"][0]["局数"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight+SettingEdge*2,OneLetterWidth*13+len(str(record["timescore"][0]["胜利局数"]))+len(str(record["timescore"][0]["局数"])),SettingButtonHeight,SETTING_FONT)
     DrawWord("  "+"time:"+str(record["timescore"][0]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*2+SettingEdge*2,OneLetterWidth*7+len(str(record["timescore"][0]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT)        
-    DrawWord                                    ("2."+"mediate ",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*3+SettingEdge*2,OneLetterWidth*11,SettingButtonHeight,SETTING_FONT)
+    DrawWord("2."+"mediate  "+str(record["timescore"][1]["胜利局数"])+"/"+str(record["timescore"][1]["局数"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*3+SettingEdge*2,OneLetterWidth*13+len(str(record["timescore"][1]["胜利局数"]))+len(str(record["timescore"][1]["局数"])),SettingButtonHeight,SETTING_FONT)
     DrawWord("  "+"time:"+str(record["timescore"][1]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*4+SettingEdge*2,OneLetterWidth*7+len(str(record["timescore"][1]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT) 
-    DrawWord                                    ("3."+"advanced",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*5+SettingEdge*2,OneLetterWidth*11,SettingButtonHeight,SETTING_FONT)
+    DrawWord("3."+"advanced "+str(record["timescore"][2]["胜利局数"])+"/"+str(record["timescore"][2]["局数"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*5+SettingEdge*2,OneLetterWidth*13+len(str(record["timescore"][2]["胜利局数"]))+len(str(record["timescore"][2]["局数"])),SettingButtonHeight,SETTING_FONT)
     DrawWord("  "+"time:"+str(record["timescore"][2]["最好用时"]),BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*6+SettingEdge*2,OneLetterWidth*7+len(str(record["timescore"][2]["最好用时"]))*8,SettingButtonHeight,SETTING_FONT) 
 
     DrawWord        ("Choose Difficulty:",BLACK,Settingposx+SettingEdge*2,Settingposy+SettingButtonHeight*8+SettingEdge,OneLetterWidth*18,SettingButtonHeight,SETTING_FONT)
